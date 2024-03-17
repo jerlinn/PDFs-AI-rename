@@ -1,23 +1,26 @@
 import os
 import tiktoken
 from PyPDF2 import PdfReader
-from openai import OpenAI
+from groq import Groq
 import re
+import sys
 import time
 
-client = OpenAI()
+#client = OpenAI()
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"),)
 
 max_length = 15000
 
-def get_new_filename_from_openai(pdf_content):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo-0125",
+def get_new_filename_from_groq(pdf_content):
+    chat_completion = client.chat.completions.create(
         messages=[
-            {"role": "system", "content": "You are a helpful assistant designed to output JSON. Please reply with a filename that consists only of English characters, numbers, and underscores, and is no longer than 50 characters. Do not include characters outside of these, as the system may crash. Do not reply in JSON format, just reply with text."},
+            {"role": "system", "content": "You are a helpful assistant designed to extract filenames based on descriptions. Steps: 1.read the description, it's extracted by program, which may include mistake. 2.Reply with a short filename that is clear and easy to understand, which consists only of English characters and numbers only, if chinese included, automatically translate first. the name is no longer than 5 keywords, contact the keywords with `_`. e.g.:A_Prompt_engineering_cheatsheet \njust reply the final name as plain text, no code block. Rules:- Get the point, DO NOT chat. - Think step by step."},
             {"role": "user", "content": pdf_content}
-        ]
+        ],
+        model="mixtral-8x7b-32768",
+        temperature = 0.9, top_p = 0.9, max_tokens=1024, stop=None, stream=False
     )
-    initial_filename = response.choices[0].message.content
+    initial_filename = chat_completion.choices[0].message.content
     filename = validate_and_trim_filename(initial_filename)
     return filename
 
@@ -29,10 +32,10 @@ def validate_and_trim_filename(initial_filename):
         return f'empty_file_{timestamp}'
     
     if re.match("^[A-Za-z0-9_]$", initial_filename):
-        return initial_filename if len(initial_filename) <= 100 else initial_filename[:100]
+        return initial_filename if len(initial_filename) <= 35 else initial_filename[:35]
     else:
         cleaned_filename = re.sub("^[A-Za-z0-9_]$", '', initial_filename)
-        return cleaned_filename if len(cleaned_filename) <= 100 else cleaned_filename[:100]
+        return cleaned_filename if len(cleaned_filename) <= 35 else cleaned_filename[:35]   
 
 def rename_pdfs_in_directory(directory):
     pdf_contents = []
@@ -43,7 +46,7 @@ def rename_pdfs_in_directory(directory):
             filepath = os.path.join(directory, filename)
             print(f"Reading file {filepath}")
             pdf_content = pdfs_to_text_string(filepath)
-            new_file_name = get_new_filename_from_openai(pdf_content)
+            new_file_name = get_new_filename_from_groq(pdf_content)
             if new_file_name in [f for f in os.listdir(directory) if f.endswith(".pdf")]:
                 print(f"The new filename '{new_file_name}' already exists.")
                 new_file_name += "_01"
@@ -66,6 +69,7 @@ def pdfs_to_text_string(filepath):
         if num_tokens > max_length:
             content = content_token_cut(content, num_tokens, max_length)
         return content
+        print (content) 
 
 def content_token_cut(content, num_tokens, max_length):
     content_length = len(content)
@@ -77,7 +81,8 @@ def content_token_cut(content, num_tokens, max_length):
     return content
 
 def main():
-    directory = ''  # Replace with your PDF directory path
+    #directory = ''  # Replace with your PDF directory path
+    directory = sys.argv[1]  # 文件路径
     if directory == '':
       directory = input("Please input your path:")
     rename_pdfs_in_directory(directory)
