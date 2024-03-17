@@ -24,15 +24,16 @@ pip install PyPDF2 groq
 - 🔑 Get your Groq AI KEY [here](https://console.groq.com/keys)  
 
 - 📝 open `.zshrc` file.
-For Mac user, it's a hidden path under your username, like `/Users/jerlin/.zshrc`, check it by keyboard shortcut `Shift + CMD + .`  
+For Mac user, it's a hidden path under your username, like `/Users/jerlin/.zshrc`, check it by keyboard shortcut `Shift + CMD + .`
+  
 Fill the code and save:  
 ```
 GROQ_API_KEY="REPLACE YOUR KEY"
 ```
 
 ## Todo
-- [ ] clean unanticipated characters such as `\`.
-- [ ] pretty rename, no more cutting of keyword.
+- [ ] Clean up unanticipated characters such as `\`.
+- [ ] Pretty rename, no more cutting of keyword.
 - [ ] Rename by LMM such as LlaVa or Gemini Pro Vision.(Also FREE).
 - [ ] Say googbye to command line: release a Mac Automatic Flow,  which use the `RIGHT CLICK` instead, as the example shown below.
 
